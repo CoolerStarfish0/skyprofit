@@ -53,7 +53,7 @@ try {
 } catch {}
 
 async function getSkyBlockProfile(username) {
-  const url = "https://sky.shiiyu.moe/api/v2/profile/" + encodeURIComponent(username);
+  const url = "/api/profile?username=" + encodeURIComponent(username);
   const response = await fetch(url, { headers: { Accept: "application/json" } });
   if (!response.ok) throw new Error("SkyCrypt profile lookup failed (HTTP " + response.status + "). Check the username and try again.");
   const data = await response.json();
