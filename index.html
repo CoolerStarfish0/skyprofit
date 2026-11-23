@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090d13">
+  <meta name="description" content="SkyProfit — personalized Hypixel SkyBlock money-making intelligence.">
+  <title>SkyProfit — Make every coin count</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#"><span class="brand-mark">S</span><span>sky<span class="brand-accent">profit</span></span></a>
+      <div class="side-label">WORKSPACE</div>
+      <a class="nav-item active" href="#overview"><span>◫</span> Overview</a>
+      <a class="nav-item" href="#methods"><span>↗</span> Money methods</a>
+      <a class="nav-item" href="#bazaar"><span>◇</span> Bazaar scanner</a>
+      <a class="nav-item" href="#profile"><span>◎</span> My profile</a>
+      <div class="sidebar-bottom">
+        <div class="side-label">YOUR ADVISOR</div>
+        <div class="advisor-card"><div class="advisor-icon">✦</div><div><strong>SkyProfit AI</strong><small>Accuracy-first recommendations</small></div></div>
+        <div class="version">EARLY ACCESS <span>v0.1</span></div>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> Overview</div><div class="top-actions"><span class="status-dot"></span><span class="muted">Data connections pending</span><div class="avatar">SP</div></div></header>
+      <section class="welcome" id="overview">
+        <div><div class="eyebrow"><span class="live-pip"></span> YOUR SKYBLOCK MONEY HQ</div><h1>Make every coin <span>count.</span></h1><p>Know what to grind, what to flip, and what your next upgrade should be.</p></div>
+        <div class="coin-art" aria-hidden="true">₿<i>✦</i></div>
+      </section>
+      <section class="connect-panel" id="profile">
+        <div class="connect-copy"><div class="section-kicker">GET PERSONALIZED</div><h2>Start with your player profile</h2><p>Enter your Minecraft username to look up your SkyBlock profile and build recommendations around your actual progression.</p></div>
+        <form id="profile-form" class="profile-form"><label for="username">MINECRAFT USERNAME</label><div class="input-row"><span class="input-icon">⌕</span><input id="username" name="username" placeholder="e.g. CoolerStarfish0" maxlength="16" autocomplete="off" required><button type="submit">Analyze profile <span>→</span></button></div><small id="profile-message">No Microsoft or Minecraft password required.</small></form>
+      </section>
+      <div class="section-heading"><div><div class="section-kicker">YOUR COMMAND CENTER</div><h2>Overview</h2></div><span class="pill neutral">Awaiting profile</span></div>
+      <section class="stat-grid">
+        <article class="stat-card"><div class="stat-top"><span>PROFILE</span><span class="stat-symbol">◎</span></div><strong class="stat-value">Not linked</strong><small>Connect a username to begin</small></article>
+        <article class="stat-card"><div class="stat-top"><span>AVAILABLE COINS</span><span class="stat-symbol">◈</span></div><strong class="stat-value">—</strong><small>Never guessed; profile data required</small></article>
+        <article class="stat-card"><div class="stat-top"><span>TOP METHOD</span><span class="stat-symbol">↗</span></div><strong class="stat-value">Calculating…</strong><small>Based on your gear and playstyle</small></article>
+        <article class="stat-card"><div class="stat-top"><span>BAZAAR OPPORTUNITIES</span><span class="stat-symbol">◇</span></div><strong class="stat-value">—</strong><small>Live market connection not active yet</small></article>
+      </section>
+      <section class="content-grid">
+        <article class="panel methods-panel" id="methods"><div class="panel-heading"><div><div class="section-kicker">TAILORED TO YOUR PROFILE</div><h2>Money-making methods</h2></div><span class="pill neutral">Not analyzed</span></div><div class="empty-state"><div class="empty-icon">✧</div><strong>Your best method is waiting to be found</strong><p>We'll compare realistic earnings across Bazaar flipping, mining, farming, combat, fishing, dungeons, minions and more.</p><span class="tiny-note">Recommendations will include setup cost, gear, pets, equipment, mayor perks and confidence.</span></div></article>
+        <article class="panel playstyle-panel"><div class="panel-heading"><div><div class="section-kicker">YOUR PRIORITIES</div><h2>Playstyle</h2></div></div><div class="playstyle-list" role="group" aria-label="Choose playstyle"><button class="playstyle selected" data-style="money"><span class="style-icon">₿</span><span><b>Money hungry</b><small>Maximize realistic profit</small></span><span class="check">✓</span></button><button class="playstyle" data-style="chill"><span class="style-icon">☁</span><span><b>Chill</b><small>Low-effort money making</small></span><span class="check">✓</span></button><button class="playstyle" data-style="balanced"><span class="style-icon">◐</span><span><b>Balanced</b><small>Profit without endless grind</small></span><span class="check">✓</span></button><button class="playstyle" data-style="active"><span class="style-icon">⚔</span><span><b>Active</b><small>Gameplay-first methods</small></span><span class="check">✓</span></button></div><p class="preference-note" id="style-note">Prioritizing the highest realistic profit, regardless of effort.</p></article>
+      </section>
+      <section class="panel bazaar-panel" id="bazaar"><div class="panel-heading"><div><div class="section-kicker">MARKET INTELLIGENCE</div><h2>Bazaar flip scanner</h2></div><span class="pill warning">Connection pending</span></div><div class="bazaar-placeholder"><div class="market-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div><strong>Real market data. No made-up flips.</strong><p>Once connected, we'll rank opportunities using order depth, volume, fees, spread and realistic fill assumptions — not just the biggest price gap.</p></div></div></section>
+      <footer><span>SKYPROFIT <span class="footer-dot">•</span> BUILT FOR SMARTER SKYBLOCK GRINDS</span><span>Unofficial fan project · Not affiliated with Hypixel</span></footer>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
