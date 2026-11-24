@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
-const AXON_API = "https://5158-ai-backendpriv.vercel.app/api/chat";
 const firebaseConfig = {
   apiKey: "AIzaSyBVnqD6sw9KTthjB8ZaSHFFC8cn5Hyxn_U",
   authDomain: "ai-ef2a5.firebaseapp.com",
@@ -54,7 +53,12 @@ try {
 
 async function getSkyBlockProfile(username) {
   const url = "/api/profile?username=" + encodeURIComponent(username);
-  const response = await fetch(url, { headers: { Accept: "application/json" } });
+  let response;
+  try {
+    response = await fetch(url, { headers: { Accept: "application/json" } });
+  } catch (error) {
+    throw new Error("Profile lookup connection failed. Check your connection and try again.");
+  }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(data.error || "Hypixel profile lookup failed (HTTP " + response.status + ").");
@@ -66,8 +70,14 @@ async function getSkyBlockProfile(username) {
 }
 
 async function askAxon(username, profile) {
-  const credential = await signInAnonymously(auth);
-  const token = await credential.user.getIdToken(true);
+  let token;
+  try {
+    const credential = await signInAnonymously(auth);
+    token = await credential.user.getIdToken(true);
+  } catch (error) {
+    console.error("SkyProfit Firebase authentication failed:", error);
+    throw new Error("Firebase authentication failed. Please refresh the page and try again.");
+  }
   const profileJson = JSON.stringify(profile);
   const compactProfile = profileJson.length > 18000 ? profileJson.slice(0, 18000) + " [TRUNCATED]" : profileJson;
   const prompt = [
@@ -79,7 +89,9 @@ async function askAxon(username, profile) {
     "",
     "Rules: Use only facts present in the profile or well-established game mechanics. Do not invent coins, gear, skills, stats, prices, mayor perks, market spreads, or coins-per-hour. Live Bazaar prices are NOT included, so do not state a current flip profit or pretend to have scanned the market. Inventory NBT is not decoded, so equipped gear, weapons, tools, and accessories are unavailable; never guess them. Collections are a top-50 summary, not a complete collection export. If a field is absent, say it is unavailable. Separate observed profile facts from recommendations and assumptions. Give 3-5 ranked methods, explain why they fit this progression, identify missing information needed for a precise setup, and give a practical next step. Clearly mark any estimate as an estimate and confidence as low/medium/high. If the profile data is malformed or empty, explain that instead of guessing."
   ].join("\n");
-  const response = await fetch(AXON_API, {
+  let response;
+  try {
+    response = await fetch("/api/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
     body: JSON.stringify({
@@ -90,7 +102,11 @@ async function askAxon(username, profile) {
       adminAction: null,
       targetUser: null
     })
-  });
+    });
+  } catch (error) {
+    console.error("SkyProfit analysis request failed:", error);
+    throw new Error("SkyProfit could not contact its analysis service. Please try again.");
+  }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || "Axon AI request failed (HTTP " + response.status + ").");
   if (!data.answer) throw new Error("Axon returned an empty response.");
