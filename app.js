@@ -151,6 +151,7 @@ const profileSelectorWrap = document.getElementById("profile-selector-wrap");
 const profileSelector = document.getElementById("profile-selector");
 const selectedProfileNote = document.getElementById("selected-profile-note");
 const bazaarContent = document.getElementById("bazaar-content");
+const bazaarRefresh = document.getElementById("bazaar-refresh");
 let activeUsername = "";
 let activeProfileId = "";
 let latestBazaar = null;
