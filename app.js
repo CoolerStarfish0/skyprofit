@@ -95,21 +95,25 @@ function renderMarkdown(container, markdown) {
 }
 
 function getTopMethod(answer) {
-  const normalized = String(answer || "").replace(/\s+(?=\d+[.)]\s+)/g, "\n");
-  const lines = normalized.split("\n");
-  let inMethods = false;
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (/money[- ]making methods|ranked progression methods|recommended methods|top methods|best methods/i.test(line)) inMethods = true;
-    if (inMethods) {
-      const match = line.match(/^(?:[-*]\s+|\d+[.)]\s+)?\*\*([^*]+)\*\*/);
-      if (match && !/^(facts|recommendations|assumptions|missing information)/i.test(match[1])) return match[1].trim();
-      const plain = line.match(/^\d+[.)]\s+([^:—-]{3,55})(?:[:—-]|$)/);
-      if (plain) return plain[1].replace(/[*_#]/g, "").trim();
+  const normalized = String(answer || "")
+    .replace(/\\r/g, "")
+    .replace(/\\s+(?=#{1,4}\\s)/g, "\\n")
+    .replace(/\\s+(?=\\d+[.)]\\s+)/g, "\\n")
+    .replace(/---+\\s*(?=#{1,4}\\s)/g, "\\n\\n");
+  const lines = normalized.split("\\n").map(line => line.trim()).filter(Boolean);
+  const sectionIndex = lines.findIndex(line => /ranked progression methods|money[- ]making methods|recommended money methods|top money methods|best money methods/i.test(line));
+  if (sectionIndex >= 0) {
+    for (let i = sectionIndex + 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^#{1,4}\\s+/.test(line) || /^recommendations?\\s*(?:&|and)\\s*assumptions/i.test(line)) break;
+      const numbered = line.match(/^1[.)]\\s+(.+)$/);
+      if (numbered) {
+        const name = numbered[1].replace(/^\\*\\*/, "").replace(/\\*\\*$/, "").replace(/\\s+[-—:].*$/, "").replace(/[*_#]/g, "").trim();
+        if (name) return name.slice(0, 48);
+      }
     }
   }
-  const first = lines.find(line => /^\s*\d+[.)]\s+/.test(line));
-  return first ? first.replace(/^\s*\d+[.)]\s+/, "").replace(/[*_#]/g, "").split(/[:—-]/)[0].trim().slice(0, 48) : "See analysis";
+  return "See analysis";
 }
 function setStatus(text, isError = false) {
   message.textContent = text;
