@@ -16,3 +16,37 @@
   overflow: auto;
 }
 .profile-form button:disabled { opacity: .65; cursor: wait; }
+
+
+/* Clean, readable AI analysis formatting */
+.ai-result {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+  font: 12px/1.75 'DM Sans', sans-serif;
+  color: #c7d3dc;
+  background: #0b1218;
+  border: 1px solid #263640;
+  border-radius: 9px;
+  padding: 18px;
+  margin: 12px 0 0;
+  max-height: 620px;
+  overflow: auto;
+}
+.ai-result h2, .ai-result h3, .ai-result h4, .ai-result h5 {
+  color: #eaf4ed;
+  margin: 19px 0 8px;
+  font-family: 'Space Grotesk', sans-serif;
+  line-height: 1.35;
+}
+.ai-result h2 { font-size: 17px; }
+.ai-result h3 { font-size: 15px; }
+.ai-result h4, .ai-result h5 { font-size: 13px; }
+.ai-result p { margin: 7px 0 11px; }
+.ai-result strong { color: #a3ef75; font-weight: 700; }
+.ai-result ul, .ai-result ol { margin: 7px 0 13px; padding-left: 22px; }
+.ai-result li { padding-left: 3px; margin: 4px 0; }
+.ai-result li::marker { color: #a3ef75; }
+.ai-result hr { border: 0; border-top: 1px solid #2a3943; margin: 16px 0; }
+.ai-result code { background: #1a2730; border-radius: 4px; padding: 1px 4px; color: #b9e6d0; }
+.profile-form button:disabled { opacity: .65; cursor: wait; }
