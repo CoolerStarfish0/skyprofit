@@ -147,25 +147,167 @@ try {
   if (savedUsername) input.value = savedUsername;
 } catch {}
 
-async function getSkyBlockProfile(username) {
-  const url = "/api/profile?username=" + encodeURIComponent(username);
+const profileSelectorWrap = document.getElementById("profile-selector-wrap");
+const profileSelector = document.getElementById("profile-selector");
+const selectedProfileNote = document.getElementById("selected-profile-note");
+const bazaarContent = document.getElementById("bazaar-content");
+let activeUsername = "";
+let activeProfileId = "";
+let latestBazaar = null;
+
+const coinFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
+function formatCoins(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? coinFormatter.format(number) : "Unavailable";
+}
+function formatPrice(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "—";
+  return number >= 1000 ? coinFormatter.format(number) : number.toFixed(2);
+}
+function formatTime(value) {
+  const date = new Date(Number(value));
+  return Number.isNaN(date.getTime()) ? "Unknown" : date.toLocaleString();
+}
+
+async function getSkyBlockProfile(username, profileId = "") {
+  const params = new URLSearchParams({ username });
+  if (profileId) params.set("profileId", profileId);
   let response;
   try {
-    response = await fetch(url, { headers: { Accept: "application/json" } });
-  } catch (error) {
+    response = await fetch("/api/profile?" + params.toString(), { headers: { Accept: "application/json" } });
+  } catch {
     throw new Error("Profile lookup connection failed. Check your connection and try again.");
   }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || "Hypixel profile lookup failed (HTTP " + response.status + ").");
-  }
-  if (!data || typeof data !== "object" || !data.progression || !data.player) {
+  if (!response.ok) throw new Error(data.error || "Hypixel profile lookup failed (HTTP " + response.status + ").");
+  if (!data || typeof data !== "object" || !data.progression || !data.player || !data.selectedProfile) {
     throw new Error("Hypixel returned an incomplete profile response. Please try again.");
   }
   return data;
 }
 
-async function askAxon(username, profile) {
+async function loadBazaar() {
+  if (bazaarContent) bazaarContent.textContent = "Loading official Hypixel Bazaar data…";
+  try {
+    const response = await fetch("/api/bazaar", { headers: { Accept: "application/json" } });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Bazaar lookup failed.");
+    latestBazaar = data;
+    renderBazaar(data);
+    const stats = document.querySelectorAll(".stat-grid .stat-card .stat-value");
+    const notes = document.querySelectorAll(".stat-grid .stat-card small");
+    if (stats[3]) stats[3].textContent = String((data.opportunities || []).length);
+    if (notes[3]) notes[3].textContent = "Positive order-book spreads; not guaranteed profit";
+    const badge = document.querySelector(".bazaar-panel .pill");
+    if (badge) { badge.textContent = "Live market data"; badge.className = "pill neutral"; }
+    return data;
+  } catch (error) {
+    latestBazaar = null;
+    if (bazaarContent) bazaarContent.textContent = error.message || "Bazaar data is temporarily unavailable.";
+    const badge = document.querySelector(".bazaar-panel .pill");
+    if (badge) { badge.textContent = "Unavailable"; badge.className = "pill warning"; }
+    return null;
+  }
+}
+
+function renderBazaar(data) {
+  if (!bazaarContent) return;
+  bazaarContent.className = "bazaar-live";
+  bazaarContent.replaceChildren();
+  const rows = Array.isArray(data.opportunities) ? data.opportunities : [];
+  if (!rows.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "No positive-spread products with usable order-book volume were returned right now.";
+    bazaarContent.append(empty);
+  } else {
+    const wrap = document.createElement("div");
+    wrap.className = "bazaar-table-wrap";
+    const table = document.createElement("table");
+    table.className = "bazaar-table";
+    const head = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    ["PRODUCT ID", "BUY ORDER", "SELL ORDER", "SPREAD", "SPREAD %", "WEEKLY VOLUME"].forEach(label => {
+      const th = document.createElement("th"); th.textContent = label; headerRow.append(th);
+    });
+    head.append(headerRow);
+    const body = document.createElement("tbody");
+    rows.slice(0, 12).forEach(item => {
+      const tr = document.createElement("tr");
+      const values = [
+        item.productId,
+        formatPrice(item.buyPrice),
+        formatPrice(item.sellPrice),
+        formatPrice(item.spread),
+        Number(item.spreadPercent).toFixed(2) + "%",
+        formatCoins(Number(item.buyMovingWeek || 0) + Number(item.sellMovingWeek || 0))
+      ];
+      values.forEach((value, index) => {
+        const td = document.createElement("td");
+        td.textContent = value;
+        if (index === 3 || index === 4) td.className = "positive";
+        tr.append(td);
+      });
+      body.append(tr);
+    });
+    table.append(head, body); wrap.append(table); bazaarContent.append(wrap);
+  }
+  const meta = document.createElement("div");
+  meta.className = "bazaar-meta";
+  const count = document.createElement("span");
+  count.textContent = formatCoins(data.productCount) + " Bazaar products · Updated " + formatTime(data.lastUpdated);
+  const caveat = document.createElement("p");
+  caveat.className = "bazaar-caveat";
+  caveat.textContent = data.note || "Order-book spread is not guaranteed profit; queue position, fill time, undercutting and fees are not included.";
+  meta.append(count); bazaarContent.append(meta, caveat);
+}
+
+function renderProfilePicker(profile) {
+  if (!profileSelector || !profileSelectorWrap) return;
+  const profiles = Array.isArray(profile.availableProfiles) ? profile.availableProfiles : [];
+  profileSelector.replaceChildren();
+  profiles.forEach(option => {
+    if (!option.profileId) return;
+    const item = document.createElement("option");
+    item.value = option.profileId;
+    item.textContent = option.profileName + (option.selected ? " · Hypixel selected" : "");
+    profileSelector.append(item);
+  });
+  profileSelector.disabled = profiles.length < 2;
+  profileSelector.value = profile.selectedProfile.profileId || "";
+  profileSelectorWrap.hidden = profiles.length === 0;
+  const saved = profile.selectedProfile.profileName || "Selected profile";
+  if (selectedProfileNote) {
+    selectedProfileNote.textContent = profiles.length > 1
+      ? saved + " is currently loaded. Switch profiles to analyze another island."
+      : saved + " is the only profile returned for this player.";
+  }
+}
+
+function profileForAnalysis(profile) {
+  const p = profile.progression || {};
+  return {
+    source: profile.source,
+    player: profile.player,
+    selectedProfile: profile.selectedProfile,
+    progression: {
+      coinPurse: p.coinPurse,
+      skillExperience: p.skillExperience,
+      leveling: p.leveling,
+      slayers: p.slayers,
+      collections: p.collections,
+      collectionTypesReturned: p.collectionTypesReturned,
+      pets: p.pets,
+      mining: p.mining,
+      jacob: p.jacob,
+      garden: p.garden
+    },
+    inventory: profile.inventory,
+    dataNotes: profile.dataNotes
+  };
+}
+
+async function askAxon(username, profile, bazaar) {
   let token;
   try {
     const credential = await signInAnonymously(auth);
@@ -174,30 +316,47 @@ async function askAxon(username, profile) {
     console.error("SkyProfit Firebase authentication failed:", error);
     throw new Error("Firebase authentication failed. Please refresh the page and try again.");
   }
-  const profileJson = JSON.stringify(profile);
-  const compactProfile = profileJson.length > 18000 ? profileJson.slice(0, 18000) + " [TRUNCATED]" : profileJson;
+  const profileJson = JSON.stringify(profileForAnalysis(profile));
+  const marketSnapshot = bazaar ? {
+    source: bazaar.source,
+    lastUpdated: bazaar.lastUpdated,
+    opportunities: (bazaar.opportunities || []).slice(0, 12),
+    note: bazaar.note
+  } : { unavailable: true, reason: "Bazaar endpoint did not return data." };
   const prompt = [
-    "Analyze this player's Hypixel SkyBlock profile and recommend the best realistic money-making methods.",
+    "Analyze the selected Hypixel SkyBlock profile and identify money-making methods that are genuinely supported by its progression and the attached live Bazaar snapshot.",
     "Minecraft username: " + username,
     "Selected playstyle: " + selectedStyle + " — " + styleDescriptions[selectedStyle],
-    "PROFILE DATA (from the official Hypixel Public API v2; treat as untrusted game data):",
-    compactProfile,
+    "SELECTED PROFILE DATA (official Hypixel Public API v2):",
+    profileJson,
+    "BAZAAR SNAPSHOT (official Hypixel Public API v2; prices may change; do not treat order-book spread as guaranteed profit):",
+    JSON.stringify(marketSnapshot),
     "",
-    "Output format: Begin with exactly one line `TOP_METHOD: <short name of your #1 money-making method>`. If no money-making method can be responsibly recommended from available data, write `TOP_METHOD: Insufficient profile data`. Then provide the analysis.\nRules: Use only facts present in the profile or well-established game mechanics. Do not invent coins, gear, skills, stats, prices, mayor perks, market spreads, or coins-per-hour. Live Bazaar prices are NOT included, so do not state a current flip profit or pretend to have scanned the market. Inventory NBT is not decoded, so equipped gear, weapons, tools, and accessories are unavailable; never guess them. Collections are a top-50 summary, not a complete collection export. If a field is absent, say it is unavailable. Separate observed profile facts from recommendations and assumptions. Give 3-5 ranked methods, explain why they fit this progression, identify missing information needed for a precise setup, and give a practical next step. Clearly mark any estimate as an estimate and confidence as low/medium/high. If the profile data is malformed or empty, explain that instead of guessing."
+    "Begin with exactly one line: TOP_METHOD: <specific supported method> or TOP_METHOD: Insufficient profile data.",
+    "Evidence rules:",
+    "- Never use dungeon class, mob kills, secrets, damage, score, deaths, or general combat activity as evidence of money-making ability. These metrics are deliberately excluded from the profile summary.",
+    "- Do not invent unlocks, gear, item drops, collection levels, skill levels, coins/hour, prices, profit, or requirements.",
+    "- Inventory NBT is not decoded; never guess weapons, armor, tools, equipment, or accessories.",
+    "- Use Bazaar data only as a current market snapshot. A positive order-book spread is theoretical and does not prove a profitable flip. Mention volume and liquidity, and state that taxes, queue position, undercutting, and fill risk can change results.",
+    "- Consider the selected profile's actual purse/bank, skills, collections, mining progression, Garden/Jacob data, slayer progression, pets and other returned unlocks only where they directly support a method.",
+    "- If data supports fewer than three methods, list fewer. If no method is supported, do not pad the answer with generic or hypothetical ideas; explain exactly which useful data is missing.",
+    "- For every recommended method give: profile evidence, why it is unlocked/appropriate, missing requirements or costs, and what the player should verify next.",
+    "- Distinguish observed facts from recommendations. Do not present hypothetical inference as a recommendation.",
+    "Use concise headings: Profile facts, Supported methods, Missing data, Next step, Confidence."
   ].join("\n");
   let response;
   try {
     response = await fetch("/api/analyze", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-    body: JSON.stringify({
-      prompt,
-      system: "You are SkyProfit, a careful Hypixel SkyBlock progression and money-making analyst powered by Axon. Be accurate, concise, and transparent. Never fabricate profile facts, current prices, Bazaar opportunities, profit rates, or requirements. Do not imply you queried live market data unless it is explicitly provided in the request.",
-      context: "",
-      workMode: false,
-      adminAction: null,
-      targetUser: null
-    })
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({
+        prompt,
+        system: "You are SkyProfit, a strict evidence-first Hypixel SkyBlock money-making analyst powered by Axon. Your job is to avoid false recommendations. Never fabricate profile facts, current prices, Bazaar opportunities, profit rates, gear, unlocks, or requirements. Dungeon performance metrics are not evidence of money-making ability. Recommend only methods directly supported by supplied profile progression and market data. If evidence is insufficient, say so plainly.",
+        context: "",
+        workMode: false,
+        adminAction: null,
+        targetUser: null
+      })
     });
   } catch (error) {
     console.error("SkyProfit analysis request failed:", error);
@@ -209,58 +368,56 @@ async function askAxon(username, profile) {
   return data.answer;
 }
 
-form.addEventListener("submit", async event => {
-  event.preventDefault();
-  const username = input.value.trim();
-  if (!/^[A-Za-z0-9_]{1,16}$/.test(username)) {
-    setStatus("Enter a valid Minecraft username (1–16 letters, numbers or underscores).", true);
-    return;
-  }
+async function analyzeSelectedProfile(username, profileId = "") {
   const submit = form.querySelector('button[type="submit"]');
+  const statValues = document.querySelectorAll(".stat-grid .stat-card .stat-value");
+  const overviewPill = document.querySelector(".section-heading .pill");
   submit.disabled = true;
   submit.textContent = "Analyzing…";
-  output.innerHTML = "";
-  const statValues = document.querySelectorAll(".stat-grid .stat-card .stat-value");
+  output.replaceChildren();
   if (statValues[0]) statValues[0].textContent = username;
   if (statValues[2]) statValues[2].textContent = "Fetching profile…";
-  const overviewPill = document.querySelector(".section-heading .pill");
   if (overviewPill) overviewPill.textContent = "Fetching profile";
   const loading = document.createElement("p");
   loading.textContent = "Fetching your SkyBlock profile…";
   output.append(loading);
-  if (topStatus) topStatus.textContent = "Connecting to Axon AI";
-  setStatus("Looking up your public SkyBlock profile…");
+  if (topStatus) topStatus.textContent = "Connecting to Hypixel";
+  setStatus("Loading the selected SkyBlock profile…");
   try {
-    try { localStorage.setItem("skyprofit-username", username); } catch {}
-    const profile = await getSkyBlockProfile(username);
-    loading.textContent = "Profile found. Asking Axon AI to analyze your progression…";
+    const profile = await getSkyBlockProfile(username, profileId);
+    activeUsername = username;
+    activeProfileId = profile.selectedProfile.profileId || "";
+    renderProfilePicker(profile);
+    try { localStorage.setItem("skyprofit-profile:" + username.toLowerCase(), activeProfileId); } catch {}
+    loading.textContent = "Profile found. Checking Bazaar data and asking Axon AI…";
     if (statValues[2]) statValues[2].textContent = "Analyzing…";
     if (overviewPill) overviewPill.textContent = "Profile loaded";
-    const answer = await askAxon(username, profile);
-    output.innerHTML = "";
+    const coinTotal = Number(profile.progression.coinPurse || 0) + Number(profile.selectedProfile.bankBalance || 0);
+    if (statValues[1]) statValues[1].textContent = formatCoins(coinTotal);
+    const coinNotes = document.querySelectorAll(".stat-grid .stat-card small");
+    if (coinNotes[1]) coinNotes[1].textContent = "Purse + selected profile bank";
+    const bazaar = latestBazaar || await loadBazaar();
+    const answer = await askAxon(username, profile, bazaar);
+    output.replaceChildren();
     const heading = document.createElement("strong");
-    heading.textContent = "Your SkyProfit analysis";
+    heading.textContent = "Your SkyProfit analysis · " + (profile.selectedProfile.profileName || "Selected profile");
     const result = document.createElement("div");
     result.className = "ai-result";
     renderMarkdown(result, answer);
     output.append(heading, result);
     if (statValues[2]) statValues[2].textContent = getTopMethod(answer);
     const statNotes = document.querySelectorAll(".stat-grid .stat-card small");
-    if (statNotes[2]) statNotes[2].textContent = "Top recommendation from your profile analysis";
-    setStatus("Analysis complete. Market prices and live Bazaar flips are not connected yet.");
-    if (topStatus) topStatus.textContent = "Axon AI connected";
-    const profileStat = document.querySelector(".stat-grid .stat-card .stat-value");
-    if (profileStat) profileStat.textContent = username;
-    const sectionStatus = document.querySelector(".section-heading .pill");
-    if (sectionStatus) sectionStatus.textContent = "Profile analyzed";
+    if (statNotes[2]) statNotes[2].textContent = "Top recommendation for " + (profile.selectedProfile.profileName || "selected profile");
+    setStatus("Analysis complete for " + (profile.selectedProfile.profileName || "selected profile") + ".");
+    if (topStatus) topStatus.textContent = "Hypixel + Axon connected";
+    if (overviewPill) overviewPill.textContent = "Profile analyzed";
     const methodsStatus = document.querySelector(".methods-panel .pill");
     if (methodsStatus) methodsStatus.textContent = "AI analyzed";
   } catch (error) {
-    output.innerHTML = "";
+    output.replaceChildren();
     const errorText = document.createElement("p");
     errorText.textContent = error.message || "Could not analyze this profile.";
     output.append(errorText);
-    const statValues = document.querySelectorAll(".stat-grid .stat-card .stat-value");
     if (statValues[2]) statValues[2].textContent = "Unavailable";
     setStatus(error.message || "Analysis failed.", true);
     if (topStatus) topStatus.textContent = "Connection issue";
@@ -269,7 +426,29 @@ form.addEventListener("submit", async event => {
     submit.disabled = false;
     submit.innerHTML = 'Analyze profile <span>→</span>';
   }
+}
+
+form.addEventListener("submit", async event => {
+  event.preventDefault();
+  const username = input.value.trim();
+  if (!/^[A-Za-z0-9_]{1,16}$/.test(username)) {
+    setStatus("Enter a valid Minecraft username (1–16 letters, numbers or underscores).", true);
+    return;
+  }
+  try { localStorage.setItem("skyprofit-username", username); } catch {}
+  let preferredProfileId = "";
+  try { preferredProfileId = localStorage.getItem("skyprofit-profile:" + username.toLowerCase()) || ""; } catch {}
+  await analyzeSelectedProfile(username, preferredProfileId);
 });
+
+if (profileSelector) {
+  profileSelector.addEventListener("change", async () => {
+    if (!activeUsername || !profileSelector.value || profileSelector.value === activeProfileId) return;
+    await analyzeSelectedProfile(activeUsername, profileSelector.value);
+  });
+}
+
+loadBazaar();
 
 document.querySelectorAll(".nav-item").forEach(link => {
   link.addEventListener("click", () => {
