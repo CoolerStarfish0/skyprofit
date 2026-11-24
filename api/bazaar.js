@@ -37,8 +37,8 @@ export default async function handler(req, res) {
       const sellVolume = Number(quick.sellVolume);
       const buyOrders = Number(quick.buyOrders);
       const sellOrders = Number(quick.sellOrders);
-      const spread = buyPrice - sellPrice;
-      const spreadPercent = sellPrice > 0 ? (spread / sellPrice) * 100 : 0;
+      const spread = sellPrice - buyPrice;
+      const spreadPercent = buyPrice > 0 ? (spread / buyPrice) * 100 : 0;
       return {
         productId,
         buyPrice: Number.isFinite(buyPrice) ? buyPrice : null,
@@ -72,7 +72,7 @@ export default async function handler(req, res) {
       lastUpdated: Number(payload.lastUpdated) || Date.now(),
       productCount: products.length,
       opportunities,
-      note: "Candidates require at least 100 units of live depth on both sides, 3 orders on each side, and 1,000 combined units of weekly volume. Gross spread is top buy-order price minus lowest sell-offer price; it is not guaranteed profit because queue position, fill time, undercutting, taxes, and other costs are not deducted."
+      note: "Candidates require at least 100 units of live depth on both sides, 3 orders on each side, and 1,000 combined units of weekly volume. Gross order-flip spread is sell-offer price minus buy-order price; it is not guaranteed profit because queue position, fill time, undercutting, taxes, and other costs are not deducted."
     });
   } catch (error) {
     console.error("SkyProfit Bazaar proxy error:", error?.name || "Error", error?.message || "");
