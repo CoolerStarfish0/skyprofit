@@ -37,8 +37,8 @@ export default async function handler(req, res) {
       const sellVolume = Number(quick.sellVolume);
       const buyOrders = Number(quick.buyOrders);
       const sellOrders = Number(quick.sellOrders);
-      const spread = sellPrice - buyPrice;
-      const spreadPercent = buyPrice > 0 ? (spread / buyPrice) * 100 : 0;
+      const spread = buyPrice - sellPrice;
+      const spreadPercent = sellPrice > 0 ? (spread / sellPrice) * 100 : 0;
       return {
         productId,
         buyPrice: Number.isFinite(buyPrice) ? buyPrice : null,
@@ -54,12 +54,8 @@ export default async function handler(req, res) {
       };
     });
 
-    const pricedProducts = products.filter((item) => item.buyPrice !== null && item.sellPrice !== null);
-    const positiveSpreadProducts = pricedProducts.filter((item) => item.spread > 0);
-    const twoSidedProducts = products.filter((item) => item.buyVolume > 0 && item.sellVolume > 0 && item.buyOrders > 0 && item.sellOrders > 0);
-    const activeProducts = positiveSpreadProducts.filter((item) => item.buyVolume > 0 && item.sellVolume > 0);
-    const opportunities = activeProducts
-      .filter((item) => item.buyOrders > 0 && item.sellOrders > 0)
+    const opportunities = products
+      .filter((item) => item.buyPrice > item.sellPrice && item.buyVolume > 0 && item.sellVolume > 0 && item.buyOrders > 0 && item.sellOrders > 0)
       .sort((a, b) => b.spreadPercent - a.spreadPercent)
       .slice(0, 15);
 
@@ -68,24 +64,8 @@ export default async function handler(req, res) {
       source: "Hypixel Public API v2 Bazaar",
       lastUpdated: Number(payload.lastUpdated) || Date.now(),
       productCount: products.length,
-      diagnostics: {
-        pricedProducts: pricedProducts.length,
-        positiveSpreadProducts: positiveSpreadProducts.length,
-        activeProducts: activeProducts.length,
-        twoSidedProducts: twoSidedProducts.length,
-        twoSidedPositiveSpread: twoSidedProducts.filter((item) => item.spread > 0).length,
-        sampleTwoSided: twoSidedProducts.slice(0, 2).map((item) => {
-          const raw = payload.products[item.productId] || {};
-          return {
-            productId: item.productId,
-            quickStatus: raw.quick_status || null,
-            sellSummaryTop: Array.isArray(raw.sell_summary) ? raw.sell_summary[0] || null : null,
-            buySummaryTop: Array.isArray(raw.buy_summary) ? raw.buy_summary[0] || null : null
-          };
-        })
-      },
       opportunities,
-      note: "Spread is the difference between the API's current sellPrice and buyPrice order-book indicators. It is not guaranteed profit: order queue position, fill time, undercutting, taxes, and other costs are not deducted."
+      note: "Gross spread is the current top buy-order price minus the current lowest sell-offer price. It is not guaranteed profit: order queue position, fill time, undercutting, taxes, and other costs are not deducted."
     });
   } catch (error) {
     console.error("SkyProfit Bazaar proxy error:", error?.name || "Error", error?.message || "");
