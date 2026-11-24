@@ -5,6 +5,7 @@ export default async function handler(req, res) {
   }
 
   const username = String(req.query.username || "").trim();
+  const requestedProfileId = String(req.query.profileId || "").trim();
   if (!/^[A-Za-z0-9_]{1,16}$/.test(username)) {
     return res.status(400).json({ error: "Enter a valid Minecraft username." });
   }
@@ -98,12 +99,25 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "Hypixel returned profiles, but no member data was found for this player." });
     }
 
-    candidates.sort((a, b) => {
-      if (Boolean(a.profile.selected) !== Boolean(b.profile.selected)) return a.profile.selected ? -1 : 1;
-      return Number(b.member.last_save || 0) - Number(a.member.last_save || 0);
-    });
-
-    const selected = candidates[0];
+    const profileOptions = candidates.map(({ profile, member: profileMember }) => ({
+      profileId: profile.profile_id || null,
+      profileName: profile.cute_name || "Unnamed profile",
+      selected: Boolean(profile.selected),
+      lastSave: Number(profileMember.last_save || 0) || null
+    }));
+    let selected;
+    if (requestedProfileId) {
+      selected = candidates.find(({ profile }) => String(profile.profile_id || "") === requestedProfileId);
+      if (!selected) {
+        return res.status(404).json({ error: "That SkyBlock profile is no longer available for this player. Refresh the profile list and try again." });
+      }
+    } else {
+      candidates.sort((a, b) => {
+        if (Boolean(a.profile.selected) !== Boolean(b.profile.selected)) return a.profile.selected ? -1 : 1;
+        return Number(b.member.last_save || 0) - Number(a.member.last_save || 0);
+      });
+      selected = candidates[0];
+    }
     const member = selected.member;
     const skillExperience = {};
     for (const [key, value] of Object.entries(member)) {
@@ -145,11 +159,8 @@ export default async function handler(req, res) {
         lastSave: Number(member.last_save || 0) || null,
         bankBalance: Number(selected.profile.banking?.balance ?? selected.profile.bank?.balance ?? 0) || 0
       },
-      otherProfiles: candidates.slice(1).map(({ profile, member: otherMember }) => ({
-        profileName: profile.cute_name || null,
-        selected: Boolean(profile.selected),
-        lastSave: Number(otherMember.last_save || 0) || null
-      })),
+      availableProfiles: profileOptions,
+      otherProfiles: profileOptions.filter((profile) => profile.profileId !== selected.profile.profile_id),
       progression: {
         coinPurse: Number(member.coin_purse ?? member.currencies?.coin_purse ?? 0) || 0,
         skillExperience,
@@ -172,13 +183,13 @@ export default async function handler(req, res) {
         note: "Hypixel supplies inventory contents as encoded NBT. Gear and accessory item details are not decoded by this endpoint yet; do not infer them."
       },
       dataNotes: [
-        "Only the selected profile's member progression is included.",
+        "Only the selected profile's member progression is included. availableProfiles contains profile IDs and display metadata for this account.",
         "Collections are limited to the 50 largest numeric totals.",
         "Inventory NBT is not decoded, so equipped gear and accessories are unavailable."
       ]
     };
 
-    res.setHeader("Cache-Control", "public, s-maxage=30, stale-while-revalidate=60");
+    res.setHeader("Cache-Control", "public, s-maxage=20, stale-while-revalidate=40");
     return res.status(200).json(result);
   } catch (error) {
     console.error("SkyProfit Hypixel profile proxy error:", error?.name || "Error", error?.message || "");
