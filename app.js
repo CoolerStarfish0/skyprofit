@@ -232,7 +232,6 @@ form.addEventListener("submit", async event => {
     result.className = "ai-result";
     renderMarkdown(result, answer);
     output.append(heading, result);
-    const statValues = document.querySelectorAll(".stat-grid .stat-card .stat-value");
     if (statValues[2]) statValues[2].textContent = getTopMethod(answer);
     const statNotes = document.querySelectorAll(".stat-grid .stat-card small");
     if (statNotes[2]) statNotes[2].textContent = "Top recommendation from your profile analysis";
