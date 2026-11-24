@@ -27,6 +27,83 @@ const message = document.getElementById("profile-message");
 const output = document.querySelector(".empty-state");
 const topStatus = document.querySelector(".top-actions .muted");
 
+function renderInlineMarkdown(parent, text) {
+  const pattern = /(\\*\\*[^*]+\\*\\*|__[^_]+__|\\*[^*]+\\*|_[^_]+_|`[^`]+`)/g;
+  let cursor = 0;
+  for (const match of text.matchAll(pattern)) {
+    if (match.index > cursor) parent.append(document.createTextNode(text.slice(cursor, match.index)));
+    const token = match[0];
+    const element = document.createElement(token.startsWith("`") ? "code" : (token.startsWith("**") || token.startsWith("__") ? "strong" : "em"));
+    element.textContent = token.slice(token.startsWith("`") ? 1 : 2, token.startsWith("`") ? -1 : (token.startsWith("**") || token.startsWith("__") ? -2 : -1));
+    parent.append(element);
+    cursor = match.index + token.length;
+  }
+  if (cursor < text.length) parent.append(document.createTextNode(text.slice(cursor)));
+}
+
+function renderMarkdown(container, markdown) {
+  container.replaceChildren();
+  const lines = String(markdown || "").replace(/\\r/g, "").split("\\n");
+  let paragraph = [];
+  let list = null;
+  const flushParagraph = () => {
+    if (!paragraph.length) return;
+    const p = document.createElement("p");
+    renderInlineMarkdown(p, paragraph.join(" "));
+    container.append(p);
+    paragraph = [];
+  };
+  const flushList = () => { list = null; };
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) { flushParagraph(); flushList(); continue; }
+    if (/^[-*_]{3,}$/.test(line)) { flushParagraph(); flushList(); container.append(document.createElement("hr")); continue; }
+    const heading = line.match(/^(#{1,4})\\s+(.+)$/);
+    if (heading) {
+      flushParagraph(); flushList();
+      const h = document.createElement("h" + Math.min(heading[1].length + 1, 4));
+      renderInlineMarkdown(h, heading[2].replace(/\\s+#+$/, ""));
+      container.append(h);
+      continue;
+    }
+    const unordered = line.match(/^[-*+]\\s+(.+)$/);
+    const ordered = line.match(/^\\d+[.)]\\s+(.+)$/);
+    if (unordered || ordered) {
+      flushParagraph();
+      const kind = unordered ? "ul" : "ol";
+      if (!list || list.tagName.toLowerCase() !== kind) {
+        flushList();
+        list = document.createElement(kind);
+        container.append(list);
+      }
+      const item = document.createElement("li");
+      renderInlineMarkdown(item, (unordered || ordered)[1]);
+      list.append(item);
+      continue;
+    }
+    flushList();
+    paragraph.push(line);
+  }
+  flushParagraph();
+}
+
+function getTopMethod(answer) {
+  const lines = String(answer || "").split("\\n");
+  let inMethods = false;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (/money[- ]making methods|recommended methods|top methods|best methods/i.test(line)) inMethods = true;
+    if (inMethods) {
+      const match = line.match(/^(?:[-*]\\s+|\\d+[.)]\\s+)?\\*\\*([^*]+)\\*\\*/);
+      if (match && !/^(facts|recommendations|assumptions|missing information)/i.test(match[1])) return match[1].trim();
+      const plain = line.match(/^\\d+[.)]\\s+([^:—-]{3,55})(?:[:—-]|$)/);
+      if (plain) return plain[1].replace(/[*_#]/g, "").trim();
+    }
+  }
+  const first = lines.find(line => /^\\s*\\d+[.)]\\s+/.test(line));
+  return first ? first.replace(/^\\s*\\d+[.)]\\s+/, "").replace(/[*_#]/g, "").split(/[:—-]/)[0].trim().slice(0, 48) : "See analysis";
+}
+
 function setStatus(text, isError = false) {
   message.textContent = text;
   message.style.color = isError ? "#f0a18b" : "#a3ef75";
