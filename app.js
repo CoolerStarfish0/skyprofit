@@ -342,6 +342,7 @@ async function askAxon(username, profile, bazaar) {
     "- Do not invent unlocks, gear, item drops, collection levels, skill levels, coins/hour, prices, profit, or requirements.",
     "- Inventory NBT is not decoded; never guess weapons, armor, tools, equipment, or accessories.",
     "- Use Bazaar data only as a current market snapshot. A positive order-book spread is theoretical and does not prove a profitable flip. Mention volume and liquidity, and state that taxes, queue position, undercutting, and fill risk can change results.",
+    "- If the Bazaar snapshot has an empty opportunities array, explicitly say no qualifying liquid positive-spread candidates were found and do not recommend Bazaar flipping as a current opportunity.",
     "- Consider the selected profile's actual purse/bank, skills, collections, mining progression, Garden/Jacob data, slayer progression, pets and other returned unlocks only where they directly support a method.",
     "- If data supports fewer than three methods, list fewer. If no method is supported, do not pad the answer with generic or hypothetical ideas; explain exactly which useful data is missing.",
     "- For every recommended method give: profile evidence, why it is unlocked/appropriate, missing requirements or costs, and what the player should verify next.",
