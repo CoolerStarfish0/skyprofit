@@ -299,6 +299,9 @@ function profileForAnalysis(profile) {
       skillExperience: p.skillExperience,
       leveling: p.leveling,
       slayers: p.slayers,
+      dungeons: p.dungeons,
+      kuudra: p.kuudra,
+      netherIsland: p.netherIsland,
       collections: p.collections,
       collectionTypesReturned: p.collectionTypesReturned,
       pets: p.pets,
@@ -328,27 +331,35 @@ async function askAxon(username, profile, bazaar) {
     note: bazaar.note
   } : { unavailable: true, reason: "Bazaar endpoint did not return data." };
   const prompt = [
-    "Analyze the selected Hypixel SkyBlock profile and identify money-making methods that are genuinely supported by its progression and the attached live Bazaar snapshot.",
+    "Act as a practical Hypixel SkyBlock money-making coach. Recommend actual gameplay methods as well as market trading. Do not reduce the answer to Bazaar flips or collection-item trading.",
     "Minecraft username: " + username,
     "Selected playstyle: " + selectedStyle + " — " + styleDescriptions[selectedStyle],
+    "PLAYER-CONFIRMED CAPITAL: The player explicitly confirms they have 60,000,000 coins in their selected profile bank. Treat 60M as their available bank capital even if the API bank field is missing or stale; show API-reported bank separately if it conflicts. The purse is separate spending money.",
+    "PLAYER-CONFIRMED COLLECTIONS: Collection values in this profile are accurate. Use them as progression/history signals and possible unlock evidence, but NOT as proof the player currently owns those items, can sell that historical amount, or should grind that item for profit.",
     "SELECTED PROFILE DATA (official Hypixel Public API v2):",
     profileJson,
-    "BAZAAR SNAPSHOT (official Hypixel Public API v2; prices may change; do not treat order-book spread as guaranteed profit):",
+    "BAZAAR SNAPSHOT (official Hypixel Public API v2; prices may change; order-book spreads are not guaranteed profit):",
     JSON.stringify(marketSnapshot),
     "",
     "Begin with exactly one line: TOP_METHOD: <specific supported method> or TOP_METHOD: Insufficient profile data.",
-    "Evidence rules:",
-    "- Never use dungeon class, mob kills, secrets, damage, score, deaths, or general combat activity as evidence of money-making ability. These metrics are deliberately excluded from the profile summary.",
-    "- Do not invent unlocks, gear, item drops, collection levels, skill levels, coins/hour, prices, profit, or requirements.",
-    "- Inventory NBT is not decoded; never guess weapons, armor, tools, equipment, or accessories.",
-    "- Use Bazaar data only as a current market snapshot. A positive order-book spread is theoretical and does not prove a profitable flip. Mention volume and liquidity, and state that taxes, queue position, undercutting, and fill risk can change results.",
-    "- If the Bazaar snapshot has an empty opportunities array, explicitly say no qualifying liquid positive-spread candidates were found and do not recommend Bazaar flipping as a current opportunity.",
-    "- Consider the selected profile's actual purse/bank, skills, collections, mining progression, Garden/Jacob data, slayer progression, pets and other returned unlocks only where they directly support a method.",
-    "- If data supports fewer than three methods, list fewer. If no method is supported, do not pad the answer with generic or hypothetical ideas; explain exactly which useful data is missing.",
-    "- For every recommended method give: profile evidence, why it is unlocked/appropriate, missing requirements or costs, and what the player should verify next.",
-    "- Distinguish observed facts from recommendations. Do not present hypothetical inference as a recommendation.",
-    "Use concise headings: Profile facts, Supported methods, Missing data, Next step, Confidence."
-  ].join("\n");
+    "METHODS YOU MUST EVALUATE (do not automatically recommend all of them):",
+    "- Kuudra: evaluate entry tier and higher-tier progression, Nether/Kuudra unlock data, combat progression, and the 60M budget. Explain whether the player appears ready, what gear/party requirements remain unknown, and whether a lower tier is a sensible test. Never assume Kuudra access or suitable gear if the profile does not prove it.",
+    "- Dungeons (including profitable runs/loot), Slayer bosses, Rift activities, mining, farming, fishing, and other active gameplay methods.",
+    "- Bazaar flipping/crafting only when the supplied live market data supports a real opportunity and the method's capital/requirements fit.",
+    "- Minions and passive methods only when there is actual evidence to estimate setup and returns.",
+    "EVIDENCE RULES:",
+    "- Consider 60M bank capital when judging setup affordability and risk. Do not recommend risking all 60M; give a sensible test budget/reserve when a method needs investment.",
+    "- Treat accurate collections as historical progression signals, not inventory or guaranteed income. Do not recommend grinding Magma Cream or any other collection solely because its total is high.",
+    "- Use skills, slayer levels, mining progression, Garden/Jacob data, pets, Nether/Kuudra data, and dungeon data to identify unlocks and prerequisites. Dungeon class, mob kills, secrets, damage, score, or deaths alone are NOT evidence of money-making ability or expected profit.",
+    "- Do not invent unlocks, gear, item drops, skill levels, prices, coins/hour, profit rates, party requirements, or completion tiers. Inventory NBT is not decoded; never guess weapons, armor, tools, equipment, or accessories.",
+    "- For Kuudra and other combat methods, distinguish confirmed access/progression from unknown gear and party readiness. If essential requirements are missing from the API, mark the method 'promising but needs verification' rather than pretending it is unlocked or impossible.",
+    "- Evaluate the full set of gameplay methods even if Bazaar opportunities are empty. An empty Bazaar candidate list only means no qualifying Bazaar flips were found right now; it does not mean there are no money-making methods in the game.",
+    "- Use live Bazaar data only for current market estimates. Mention liquidity and fill risk; do not claim gross spread is guaranteed profit. If opportunities are empty, say no qualifying Bazaar flips were found, then continue evaluating gameplay methods.",
+    "- Rank methods by realistic suitability, not just theoretical maximum coins/hour. For each method include: recommendation status (ready / conditional / not enough data), profile evidence, estimated setup-cost range only if supported, requirements to verify, risk/effort, and why the 60M budget does or does not fit.",
+    "- Do not treat bank capital as income or claim a profit/hour without reliable current evidence. If rates are unavailable, say so and explain how to measure them with a short test.",
+    "- Give up to 5 genuinely useful options; fewer is fine. Do not pad with generic ideas.",
+    "Use concise headings: Profile facts, Best money-making methods, What to verify, Suggested budget, Confidence."
+  ]
   let response;
   try {
     response = await fetch("/api/analyze", {
@@ -356,7 +367,7 @@ async function askAxon(username, profile, bazaar) {
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
       body: JSON.stringify({
         prompt,
-        system: "You are SkyProfit, a strict evidence-first Hypixel SkyBlock money-making analyst powered by Axon. Your job is to avoid false recommendations. Never fabricate profile facts, current prices, Bazaar opportunities, profit rates, gear, unlocks, or requirements. Dungeon performance metrics are not evidence of money-making ability. Recommend only methods directly supported by supplied profile progression and market data. If evidence is insufficient, say so plainly.",
+        system: "You are SkyProfit, a practical Hypixel SkyBlock money-making coach. Evaluate active gameplay methods such as Kuudra, dungeons, slayers, Rift, mining, farming and fishing alongside Bazaar flips. Use the player-confirmed 60M bank capital and accurate collections correctly. Never fabricate access, gear, prices, profit rates or requirements; clearly label uncertain readiness and suggest what to verify. Dungeon performance metrics alone are not evidence of profit.",
         context: "",
         workMode: false,
         adminAction: null,
