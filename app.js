@@ -95,23 +95,23 @@ function renderMarkdown(container, markdown) {
 }
 
 function getTopMethod(answer) {
-  const normalized = String(answer || "")
-    .replace(/\\r/g, "")
-    .replace(/\\s+(?=#{1,4}\\s)/g, "\\n")
-    .replace(/\\s+(?=\\d+[.)]\\s+)/g, "\\n")
-    .replace(/---+\\s*(?=#{1,4}\\s)/g, "\\n\\n");
-  const lines = normalized.split("\\n").map(line => line.trim()).filter(Boolean);
-  const sectionIndex = lines.findIndex(line => /ranked progression methods|money[- ]making methods|recommended money methods|top money methods|best money methods/i.test(line));
-  if (sectionIndex >= 0) {
-    for (let i = sectionIndex + 1; i < lines.length; i++) {
-      const line = lines[i];
-      if (/^#{1,4}\\s+/.test(line) || /^recommendations?\\s*(?:&|and)\\s*assumptions/i.test(line)) break;
-      const numbered = line.match(/^1[.)]\\s+(.+)$/);
-      if (numbered) {
-        const name = numbered[1].replace(/^\\*\\*/, "").replace(/\\*\\*$/, "").replace(/\\s+[-—:].*$/, "").replace(/[*_#]/g, "").trim();
-        if (name) return name.slice(0, 48);
-      }
-    }
+  const raw = String(answer || "").replace(/\r/g, "");
+  const heading = /(?:ranked progression methods|money[- ]making methods|recommended money methods|top money methods|best money methods)/i;
+  const start = raw.search(heading);
+  if (start < 0) return "See analysis";
+
+  let section = raw.slice(start);
+  const nextSection = section.search(/\n\s*#{1,4}\s*(?:recommendations?|observed profile facts|confidence levels|missing information)\b/i);
+  if (nextSection >= 0) section = section.slice(0, nextSection);
+
+  section = section.replace(/---+/g, "\n");
+  const boldItem = section.match(/(?:^|\s)1[.)]\s+\*\*([^*]+)\*\*/);
+  if (boldItem && boldItem[1].trim()) return boldItem[1].trim().slice(0, 48);
+
+  const plainItem = section.match(/(?:^|\s)1[.)]\s+([^\n]+)/);
+  if (plainItem) {
+    const name = plainItem[1].split(/\s+[-—:]\s+/)[0].replace(/[*_#]/g, "").trim();
+    if (name) return name.slice(0, 48);
   }
   return "See analysis";
 }
