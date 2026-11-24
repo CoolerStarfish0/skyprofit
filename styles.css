@@ -67,3 +67,8 @@
 .bazaar-meta { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; color:var(--muted); font-size:10px; margin-top:12px; }
 .bazaar-caveat { color:#84939e; font-size:10px; line-height:1.6; margin:10px 0 0; }
 @media(max-width:760px) { .bazaar-meta { flex-direction:column; } }
+
+.bazaar-actions { display:flex; align-items:center; gap:8px; }
+.bazaar-actions button { border:1px solid #34443e; border-radius:6px; background:#17231f; color:var(--green); padding:6px 10px; font:600 10px 'DM Sans',sans-serif; cursor:pointer; }
+.bazaar-actions button:hover { background:#22352a; }
+.bazaar-actions button:disabled { opacity:.6; cursor:wait; }
