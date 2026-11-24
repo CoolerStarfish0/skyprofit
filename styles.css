@@ -50,3 +50,20 @@
 .ai-result hr { border: 0; border-top: 1px solid #2a3943; margin: 16px 0; }
 .ai-result code { background: #1a2730; border-radius: 4px; padding: 1px 4px; color: #b9e6d0; }
 .profile-form button:disabled { opacity: .65; cursor: wait; }
+
+
+/* SkyBlock profile selection */
+.profile-picker { margin-top: 12px; }
+.profile-picker[hidden] { display: none; }
+.profile-picker label { display:block; margin-bottom:7px; color:#9eafa9; font-size:9px; font-weight:700; letter-spacing:1.2px; }
+.profile-picker select { width:100%; border:1px solid #34443e; border-radius:7px; padding:11px 12px; background:#0b1218; color:var(--text); font:600 12px 'DM Sans',sans-serif; }
+.profile-picker>small { display:block; color:#82938b; font-size:10px; margin:7px 2px 0; }
+.bazaar-table-wrap { width:100%; overflow-x:auto; margin-top:15px; }
+.bazaar-table { width:100%; border-collapse:collapse; min-width:620px; font-size:11px; }
+.bazaar-table th { color:#81919d; font-size:9px; text-align:left; letter-spacing:.8px; padding:10px 9px; border-bottom:1px solid var(--line); }
+.bazaar-table td { padding:11px 9px; border-bottom:1px solid #1d2a34; color:#d4e0e5; }
+.bazaar-table tr:last-child td { border-bottom:0; }
+.bazaar-table .positive { color:var(--green); font-weight:700; }
+.bazaar-meta { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; color:var(--muted); font-size:10px; margin-top:12px; }
+.bazaar-caveat { color:#84939e; font-size:10px; line-height:1.6; margin:10px 0 0; }
+@media(max-width:760px) { .bazaar-meta { flex-direction:column; } }
