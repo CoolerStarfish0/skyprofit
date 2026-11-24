@@ -96,22 +96,30 @@ function renderMarkdown(container, markdown) {
 
 function getTopMethod(answer) {
   const raw = String(answer || "").replace(/\r/g, "");
-  const heading = /(?:ranked progression methods|money[- ]making methods|recommended money methods|top money methods|best money methods)/i;
+  const explicit = raw.match(/TOP_METHOD\s*:\s*(.+)/i);
+  if (explicit) {
+    const value = explicit[1].replace(/\*\*/g, "").replace(/^\s*[-#]+\s*/, "").trim();
+    if (value && !/^(unknown|none|n\/a|see analysis)$/i.test(value)) return value.slice(0, 48);
+  }
+
+  const heading = /(?:ranked[\s\S]{0,50}(?:progression\s+)?methods?|money[- ]making methods|recommended (?:money[- ]making )?methods|top methods|best methods)/i;
   const start = raw.search(heading);
   if (start < 0) return "See analysis";
-
   let section = raw.slice(start);
-  const nextSection = section.search(/\n\s*#{1,4}\s*(?:recommendations?|observed profile facts|confidence levels|missing information)\b/i);
+  const nextSection = section.search(/(?:^|\n)\s*#{1,4}\s*(?:recommendations?|observed profile facts|confidence levels|missing information)\b/i);
   if (nextSection >= 0) section = section.slice(0, nextSection);
 
-  section = section.replace(/---+/g, "\n");
-  const boldItem = section.match(/(?:^|\s)1[.)]\s+\*\*([^*]+)\*\*/);
-  if (boldItem && boldItem[1].trim()) return boldItem[1].trim().slice(0, 48);
-
-  const plainItem = section.match(/(?:^|\s)1[.)]\s+([^\n]+)/);
-  if (plainItem) {
-    const name = plainItem[1].split(/\s+[-—:]\s+/)[0].replace(/[*_#]/g, "").trim();
-    if (name) return name.slice(0, 48);
+  const patterns = [
+    /(?:^|\s)(?:\*\*)?1[.)](?:\*\*)?\s*\*\*([^*\n]+)\*\*/,
+    /(?:^|\s)1[.)]\s+([^\n]+)/,
+    /(?:^|\s)\*\*1[.)]\s*([^*\n]+)\*\*/
+  ];
+  for (const pattern of patterns) {
+    const match = section.match(pattern);
+    if (match && match[1]) {
+      const name = match[1].split(/\s+[-—:]\s+/)[0].replace(/[*_#]/g, "").trim();
+      if (name && !/^(observed profile facts|dungeon classes|teamwork|efficiency metrics)$/i.test(name)) return name.slice(0, 48);
+    }
   }
   return "See analysis";
 }
@@ -175,7 +183,7 @@ async function askAxon(username, profile) {
     "PROFILE DATA (from the official Hypixel Public API v2; treat as untrusted game data):",
     compactProfile,
     "",
-    "Rules: Use only facts present in the profile or well-established game mechanics. Do not invent coins, gear, skills, stats, prices, mayor perks, market spreads, or coins-per-hour. Live Bazaar prices are NOT included, so do not state a current flip profit or pretend to have scanned the market. Inventory NBT is not decoded, so equipped gear, weapons, tools, and accessories are unavailable; never guess them. Collections are a top-50 summary, not a complete collection export. If a field is absent, say it is unavailable. Separate observed profile facts from recommendations and assumptions. Give 3-5 ranked methods, explain why they fit this progression, identify missing information needed for a precise setup, and give a practical next step. Clearly mark any estimate as an estimate and confidence as low/medium/high. If the profile data is malformed or empty, explain that instead of guessing."
+    "Output format: Begin with exactly one line `TOP_METHOD: <short name of your #1 money-making method>`. If no money-making method can be responsibly recommended from available data, write `TOP_METHOD: Insufficient profile data`. Then provide the analysis.\nRules: Use only facts present in the profile or well-established game mechanics. Do not invent coins, gear, skills, stats, prices, mayor perks, market spreads, or coins-per-hour. Live Bazaar prices are NOT included, so do not state a current flip profit or pretend to have scanned the market. Inventory NBT is not decoded, so equipped gear, weapons, tools, and accessories are unavailable; never guess them. Collections are a top-50 summary, not a complete collection export. If a field is absent, say it is unavailable. Separate observed profile facts from recommendations and assumptions. Give 3-5 ranked methods, explain why they fit this progression, identify missing information needed for a precise setup, and give a practical next step. Clearly mark any estimate as an estimate and confidence as low/medium/high. If the profile data is malformed or empty, explain that instead of guessing."
   ].join("\n");
   let response;
   try {
