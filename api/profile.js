@@ -53,7 +53,13 @@ export default async function handler(req, res) {
     );
 
     if (hypixelResponse.status === 403) {
-      return res.status(502).json({ error: "Hypixel rejected the API key. Check that HYPIXEL_API_KEY is valid in the Vercel Production environment, then redeploy." });
+      const rejected = await hypixelResponse.json().catch(() => ({}));
+      const reason = String(rejected?.cause || "").slice(0, 120);
+      return res.status(502).json({
+        error: reason
+          ? "Hypixel rejected the API key: " + reason + ". Check the key in Vercel."
+          : "Hypixel rejected the API key. Check that HYPIXEL_API_KEY is valid in the Vercel Production environment, then redeploy."
+      });
     }
     if (hypixelResponse.status === 429) {
       const retryAfter = hypixelResponse.headers.get("retry-after");
