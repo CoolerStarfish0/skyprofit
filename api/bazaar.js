@@ -55,7 +55,14 @@ export default async function handler(req, res) {
     });
 
     const opportunities = products
-      .filter((item) => item.buyPrice > item.sellPrice && item.buyVolume > 0 && item.sellVolume > 0 && item.buyOrders > 0 && item.sellOrders > 0)
+      .filter((item) =>
+        item.buyPrice > item.sellPrice &&
+        item.buyVolume >= 100 &&
+        item.sellVolume >= 100 &&
+        item.buyOrders >= 3 &&
+        item.sellOrders >= 3 &&
+        (item.buyMovingWeek + item.sellMovingWeek) >= 1000
+      )
       .sort((a, b) => b.spreadPercent - a.spreadPercent)
       .slice(0, 15);
 
