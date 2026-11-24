@@ -460,6 +460,15 @@ if (profileSelector) {
   });
 }
 
+if (bazaarRefresh) {
+  bazaarRefresh.addEventListener("click", async () => {
+    bazaarRefresh.disabled = true;
+    bazaarRefresh.textContent = "Refreshing…";
+    await loadBazaar();
+    bazaarRefresh.disabled = false;
+    bazaarRefresh.textContent = "Refresh";
+  });
+}
 loadBazaar();
 
 document.querySelectorAll(".nav-item").forEach(link => {
