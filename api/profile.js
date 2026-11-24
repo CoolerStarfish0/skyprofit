@@ -178,6 +178,8 @@ export default async function handler(req, res) {
         leveling: member.leveling || null,
         slayers: member.slayer_bosses || null,
         dungeons: member.dungeons || null,
+        kuudra: member.kuudra_completed_tiers || member.nether_island_player_data?.kuudra_completed_tiers || null,
+        netherIsland: member.nether_island_player_data || null,
         collections,
         collectionTypesReturned: Object.keys(rawCollections).length,
         pets,
@@ -196,6 +198,7 @@ export default async function handler(req, res) {
       dataNotes: [
         "Only the selected profile's member progression is included. availableProfiles contains profile IDs and display metadata for this account.",
         "Collections are limited to the 50 largest numeric totals.",
+        "Dungeon and Nether Island/Kuudra progression are included for unlock and prerequisite checks, not as proof of profit or combat gear readiness.",
         "Inventory NBT is not decoded, so equipped gear and accessories are unavailable.",
         "A coin purse or bank value equal to 9,999,999,999 is treated as unavailable because Hypixel may return it as a sentinel, not a real balance."
       ]
