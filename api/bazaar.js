@@ -56,6 +56,7 @@ export default async function handler(req, res) {
 
     const pricedProducts = products.filter((item) => item.buyPrice !== null && item.sellPrice !== null);
     const positiveSpreadProducts = pricedProducts.filter((item) => item.spread > 0);
+    const twoSidedProducts = products.filter((item) => item.buyVolume > 0 && item.sellVolume > 0 && item.buyOrders > 0 && item.sellOrders > 0);
     const activeProducts = positiveSpreadProducts.filter((item) => item.buyVolume > 0 && item.sellVolume > 0);
     const opportunities = activeProducts
       .filter((item) => item.buyOrders > 0 && item.sellOrders > 0)
@@ -71,13 +72,8 @@ export default async function handler(req, res) {
         pricedProducts: pricedProducts.length,
         positiveSpreadProducts: positiveSpreadProducts.length,
         activeProducts: activeProducts.length,
-        samples: positiveSpreadProducts.slice(0, 5).map((item) => ({
-          productId: item.productId,
-          buyVolume: item.buyVolume,
-          sellVolume: item.sellVolume,
-          buyOrders: item.buyOrders,
-          sellOrders: item.sellOrders
-        }))
+        twoSidedProducts: twoSidedProducts.length,
+        twoSidedPositiveSpread: twoSidedProducts.filter((item) => item.spread > 0).length
       },
       opportunities,
       note: "Spread is the difference between the API's current sellPrice and buyPrice order-book indicators. It is not guaranteed profit: order queue position, fill time, undercutting, taxes, and other costs are not deducted."
