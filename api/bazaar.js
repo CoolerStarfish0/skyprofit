@@ -54,8 +54,11 @@ export default async function handler(req, res) {
       };
     });
 
-    const opportunities = products
-      .filter((item) => item.buyPrice > 0 && item.spread > 0 && item.buyVolume > 0 && item.sellVolume > 0 && item.buyOrders > 0 && item.sellOrders > 0)
+    const pricedProducts = products.filter((item) => item.buyPrice !== null && item.sellPrice !== null);
+    const positiveSpreadProducts = pricedProducts.filter((item) => item.spread > 0);
+    const activeProducts = positiveSpreadProducts.filter((item) => item.buyVolume > 0 && item.sellVolume > 0);
+    const opportunities = activeProducts
+      .filter((item) => item.buyOrders > 0 && item.sellOrders > 0)
       .sort((a, b) => b.spreadPercent - a.spreadPercent)
       .slice(0, 15);
 
@@ -64,6 +67,11 @@ export default async function handler(req, res) {
       source: "Hypixel Public API v2 Bazaar",
       lastUpdated: Number(payload.lastUpdated) || Date.now(),
       productCount: products.length,
+      diagnostics: {
+        pricedProducts: pricedProducts.length,
+        positiveSpreadProducts: positiveSpreadProducts.length,
+        activeProducts: activeProducts.length
+      },
       opportunities,
       note: "Spread is the difference between the API's current sellPrice and buyPrice order-book indicators. It is not guaranteed profit: order queue position, fill time, undercutting, taxes, and other costs are not deducted."
     });
