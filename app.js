@@ -154,6 +154,7 @@ const bazaarContent = document.getElementById("bazaar-content");
 let activeUsername = "";
 let activeProfileId = "";
 let latestBazaar = null;
+let bazaarFetchedAt = 0;
 
 const coinFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 function formatCoins(value) {
@@ -194,6 +195,7 @@ async function loadBazaar() {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || "Bazaar lookup failed.");
     latestBazaar = data;
+    bazaarFetchedAt = Date.now();
     renderBazaar(data);
     const stats = document.querySelectorAll(".stat-grid .stat-card .stat-value");
     const notes = document.querySelectorAll(".stat-grid .stat-card small");
@@ -383,8 +385,15 @@ async function analyzeSelectedProfile(username, profileId = "") {
   output.append(loading);
   if (topStatus) topStatus.textContent = "Connecting to Hypixel";
   setStatus("Loading the selected SkyBlock profile…");
+  if (profileSelector) profileSelector.disabled = true;
   try {
-    const profile = await getSkyBlockProfile(username, profileId);
+    let profile;
+    try {
+      profile = await getSkyBlockProfile(username, profileId);
+    } catch (error) {
+      if (!profileId || !/no longer available|not found/i.test(error.message)) throw error;
+      profile = await getSkyBlockProfile(username);
+    }
     activeUsername = username;
     activeProfileId = profile.selectedProfile.profileId || "";
     renderProfilePicker(profile);
@@ -396,7 +405,7 @@ async function analyzeSelectedProfile(username, profileId = "") {
     if (statValues[1]) statValues[1].textContent = formatCoins(coinTotal);
     const coinNotes = document.querySelectorAll(".stat-grid .stat-card small");
     if (coinNotes[1]) coinNotes[1].textContent = "Purse + selected profile bank";
-    const bazaar = latestBazaar || await loadBazaar();
+    const bazaar = latestBazaar && Date.now() - bazaarFetchedAt < 20000 ? latestBazaar : await loadBazaar();
     const answer = await askAxon(username, profile, bazaar);
     output.replaceChildren();
     const heading = document.createElement("strong");
@@ -424,6 +433,7 @@ async function analyzeSelectedProfile(username, profileId = "") {
     if (overviewPill) overviewPill.textContent = "Analysis failed";
   } finally {
     submit.disabled = false;
+    if (profileSelector) profileSelector.disabled = !profileSelector.options || profileSelector.options.length < 2;
     submit.innerHTML = 'Analyze profile <span>→</span>';
   }
 }
