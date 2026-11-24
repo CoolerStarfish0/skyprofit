@@ -56,7 +56,7 @@ export default async function handler(req, res) {
 
     const opportunities = products
       .filter((item) =>
-        item.buyPrice > item.sellPrice &&
+        item.sellPrice > item.buyPrice &&
         item.buyVolume >= 100 &&
         item.sellVolume >= 100 &&
         item.buyOrders >= 3 &&
