@@ -209,7 +209,10 @@ form.addEventListener("submit", async event => {
   submit.textContent = "Analyzing…";
   output.innerHTML = "";
   const statValues = document.querySelectorAll(".stat-grid .stat-card .stat-value");
-  if (statValues[2]) statValues[2].textContent = "Analyzing…";
+  if (statValues[0]) statValues[0].textContent = username;
+  if (statValues[2]) statValues[2].textContent = "Fetching profile…";
+  const overviewPill = document.querySelector(".section-heading .pill");
+  if (overviewPill) overviewPill.textContent = "Fetching profile";
   const loading = document.createElement("p");
   loading.textContent = "Fetching your SkyBlock profile…";
   output.append(loading);
@@ -219,6 +222,8 @@ form.addEventListener("submit", async event => {
     try { localStorage.setItem("skyprofit-username", username); } catch {}
     const profile = await getSkyBlockProfile(username);
     loading.textContent = "Profile found. Asking Axon AI to analyze your progression…";
+    if (statValues[2]) statValues[2].textContent = "Analyzing…";
+    if (overviewPill) overviewPill.textContent = "Profile loaded";
     const answer = await askAxon(username, profile);
     output.innerHTML = "";
     const heading = document.createElement("strong");
@@ -248,6 +253,7 @@ form.addEventListener("submit", async event => {
     if (statValues[2]) statValues[2].textContent = "Unavailable";
     setStatus(error.message || "Analysis failed.", true);
     if (topStatus) topStatus.textContent = "Connection issue";
+    if (overviewPill) overviewPill.textContent = "Analysis failed";
   } finally {
     submit.disabled = false;
     submit.innerHTML = 'Analyze profile <span>→</span>';
