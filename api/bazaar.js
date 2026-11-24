@@ -72,7 +72,7 @@ export default async function handler(req, res) {
       lastUpdated: Number(payload.lastUpdated) || Date.now(),
       productCount: products.length,
       opportunities,
-      note: "Gross spread is the current top buy-order price minus the current lowest sell-offer price. It is not guaranteed profit: order queue position, fill time, undercutting, taxes, and other costs are not deducted."
+      note: "Candidates require at least 100 units of live depth on both sides, 3 orders on each side, and 1,000 combined units of weekly volume. Gross spread is top buy-order price minus lowest sell-offer price; it is not guaranteed profit because queue position, fill time, undercutting, taxes, and other costs are not deducted."
     });
   } catch (error) {
     console.error("SkyProfit Bazaar proxy error:", error?.name || "Error", error?.message || "");
