@@ -28,13 +28,14 @@ const output = document.querySelector(".empty-state");
 const topStatus = document.querySelector(".top-actions .muted");
 
 function renderInlineMarkdown(parent, text) {
-  const pattern = /(\\*\\*[^*]+\\*\\*|__[^_]+__|\\*[^*]+\\*|_[^_]+_|`[^`]+`)/g;
+  const pattern = /(\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_)/g;
   let cursor = 0;
   for (const match of text.matchAll(pattern)) {
     if (match.index > cursor) parent.append(document.createTextNode(text.slice(cursor, match.index)));
     const token = match[0];
-    const element = document.createElement(token.startsWith("`") ? "code" : (token.startsWith("**") || token.startsWith("__") ? "strong" : "em"));
-    element.textContent = token.slice(token.startsWith("`") ? 1 : 2, token.startsWith("`") ? -1 : (token.startsWith("**") || token.startsWith("__") ? -2 : -1));
+    const isBold = token.startsWith("**") || token.startsWith("__");
+    const element = document.createElement(isBold ? "strong" : "em");
+    element.textContent = token.slice(2, isBold ? -2 : -1);
     parent.append(element);
     cursor = match.index + token.length;
   }
@@ -43,7 +44,13 @@ function renderInlineMarkdown(parent, text) {
 
 function renderMarkdown(container, markdown) {
   container.replaceChildren();
-  const lines = String(markdown || "").replace(/\\r/g, "").split("\\n");
+  const normalized = String(markdown || "")
+    .replace(/\r/g, "")
+    .replace(/\s+(?=#{1,4}\s)/g, "\n")
+    .replace(/\s+(?=\d+[.)]\s+\*\*)/g, "\n")
+    .replace(/\s+(?=---+\s*(?:\n|$))/g, "\n")
+    .replace(/---+\s*(?=#{1,4}\s)/g, "\n\n");
+  const lines = normalized.split("\n");
   let paragraph = [];
   let list = null;
   const flushParagraph = () => {
@@ -58,16 +65,16 @@ function renderMarkdown(container, markdown) {
     const line = rawLine.trim();
     if (!line) { flushParagraph(); flushList(); continue; }
     if (/^[-*_]{3,}$/.test(line)) { flushParagraph(); flushList(); container.append(document.createElement("hr")); continue; }
-    const heading = line.match(/^(#{1,4})\\s+(.+)$/);
+    const heading = line.match(/^(#{1,4})\s+(.+)$/);
     if (heading) {
       flushParagraph(); flushList();
       const h = document.createElement("h" + Math.min(heading[1].length + 1, 4));
-      renderInlineMarkdown(h, heading[2].replace(/\\s+#+$/, ""));
+      renderInlineMarkdown(h, heading[2].replace(/\s+#+$/, ""));
       container.append(h);
       continue;
     }
-    const unordered = line.match(/^[-*+]\\s+(.+)$/);
-    const ordered = line.match(/^\\d+[.)]\\s+(.+)$/);
+    const unordered = line.match(/^[-*+]\s+(.+)$/);
+    const ordered = line.match(/^\d+[.)]\s+(.+)$/);
     if (unordered || ordered) {
       flushParagraph();
       const kind = unordered ? "ul" : "ol";
@@ -88,22 +95,22 @@ function renderMarkdown(container, markdown) {
 }
 
 function getTopMethod(answer) {
-  const lines = String(answer || "").split("\\n");
+  const normalized = String(answer || "").replace(/\s+(?=\d+[.)]\s+)/g, "\n");
+  const lines = normalized.split("\n");
   let inMethods = false;
   for (const raw of lines) {
     const line = raw.trim();
-    if (/money[- ]making methods|recommended methods|top methods|best methods/i.test(line)) inMethods = true;
+    if (/money[- ]making methods|ranked progression methods|recommended methods|top methods|best methods/i.test(line)) inMethods = true;
     if (inMethods) {
-      const match = line.match(/^(?:[-*]\\s+|\\d+[.)]\\s+)?\\*\\*([^*]+)\\*\\*/);
+      const match = line.match(/^(?:[-*]\s+|\d+[.)]\s+)?\*\*([^*]+)\*\*/);
       if (match && !/^(facts|recommendations|assumptions|missing information)/i.test(match[1])) return match[1].trim();
-      const plain = line.match(/^\\d+[.)]\\s+([^:—-]{3,55})(?:[:—-]|$)/);
+      const plain = line.match(/^\d+[.)]\s+([^:—-]{3,55})(?:[:—-]|$)/);
       if (plain) return plain[1].replace(/[*_#]/g, "").trim();
     }
   }
-  const first = lines.find(line => /^\\s*\\d+[.)]\\s+/.test(line));
-  return first ? first.replace(/^\\s*\\d+[.)]\\s+/, "").replace(/[*_#]/g, "").split(/[:—-]/)[0].trim().slice(0, 48) : "See analysis";
+  const first = lines.find(line => /^\s*\d+[.)]\s+/.test(line));
+  return first ? first.replace(/^\s*\d+[.)]\s+/, "").replace(/[*_#]/g, "").split(/[:—-]/)[0].trim().slice(0, 48) : "See analysis";
 }
-
 function setStatus(text, isError = false) {
   message.textContent = text;
   message.style.color = isError ? "#f0a18b" : "#a3ef75";
@@ -201,6 +208,8 @@ form.addEventListener("submit", async event => {
   submit.disabled = true;
   submit.textContent = "Analyzing…";
   output.innerHTML = "";
+  const statValues = document.querySelectorAll(".stat-grid .stat-card .stat-value");
+  if (statValues[2]) statValues[2].textContent = "Analyzing…";
   const loading = document.createElement("p");
   loading.textContent = "Fetching your SkyBlock profile…";
   output.append(loading);
@@ -214,10 +223,14 @@ form.addEventListener("submit", async event => {
     output.innerHTML = "";
     const heading = document.createElement("strong");
     heading.textContent = "Your SkyProfit analysis";
-    const result = document.createElement("pre");
+    const result = document.createElement("div");
     result.className = "ai-result";
-    result.textContent = answer;
+    renderMarkdown(result, answer);
     output.append(heading, result);
+    const statValues = document.querySelectorAll(".stat-grid .stat-card .stat-value");
+    if (statValues[2]) statValues[2].textContent = getTopMethod(answer);
+    const statNotes = document.querySelectorAll(".stat-grid .stat-card small");
+    if (statNotes[2]) statNotes[2].textContent = "Top recommendation from your profile analysis";
     setStatus("Analysis complete. Market prices and live Bazaar flips are not connected yet.");
     if (topStatus) topStatus.textContent = "Axon AI connected";
     const profileStat = document.querySelector(".stat-grid .stat-card .stat-value");
@@ -231,6 +244,8 @@ form.addEventListener("submit", async event => {
     const errorText = document.createElement("p");
     errorText.textContent = error.message || "Could not analyze this profile.";
     output.append(errorText);
+    const statValues = document.querySelectorAll(".stat-grid .stat-card .stat-value");
+    if (statValues[2]) statValues[2].textContent = "Unavailable";
     setStatus(error.message || "Analysis failed.", true);
     if (topStatus) topStatus.textContent = "Connection issue";
   } finally {
