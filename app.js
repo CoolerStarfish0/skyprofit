@@ -404,8 +404,10 @@ async function analyzeSelectedProfile(username, profileId = "") {
     loading.textContent = "Profile found. Checking Bazaar data and asking Axon AI…";
     if (statValues[2]) statValues[2].textContent = "Analyzing…";
     if (overviewPill) overviewPill.textContent = "Profile loaded";
-    const coinTotal = Number(profile.progression.coinPurse || 0) + Number(profile.selectedProfile.bankBalance || 0);
-    if (statValues[1]) statValues[1].textContent = formatCoins(coinTotal);
+    const purse = profile.progression.coinPurse;
+    const bank = profile.selectedProfile.bankBalance;
+    const coinTotal = purse == null || bank == null ? null : Number(purse) + Number(bank);
+    if (statValues[1]) statValues[1].textContent = coinTotal == null ? "Unavailable" : formatCoins(coinTotal);
     const coinNotes = document.querySelectorAll(".stat-grid .stat-card small");
     if (coinNotes[1]) coinNotes[1].textContent = "Purse + selected profile bank";
     const bazaar = latestBazaar && Date.now() - bazaarFetchedAt < 20000 ? latestBazaar : await loadBazaar();
