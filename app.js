@@ -229,7 +229,7 @@ function renderBazaar(data) {
     table.className = "bazaar-table";
     const head = document.createElement("thead");
     const headerRow = document.createElement("tr");
-    ["PRODUCT ID", "BUY ORDER", "SELL ORDER", "SPREAD", "SPREAD %", "WEEKLY VOLUME"].forEach(label => {
+    ["PRODUCT ID", "TOP BUY ORDER", "LOWEST SELL OFFER", "GROSS SPREAD", "SPREAD %", "ORDER DEPTH (BUY / SELL)", "WEEKLY VOLUME"].forEach(label => {
       const th = document.createElement("th"); th.textContent = label; headerRow.append(th);
     });
     head.append(headerRow);
@@ -242,6 +242,7 @@ function renderBazaar(data) {
         formatPrice(item.sellPrice),
         formatPrice(item.spread),
         Number(item.spreadPercent).toFixed(2) + "%",
+        formatCoins(item.buyVolume) + " / " + formatCoins(item.sellVolume),
         formatCoins(Number(item.buyMovingWeek || 0) + Number(item.sellMovingWeek || 0))
       ];
       values.forEach((value, index) => {
