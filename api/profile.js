@@ -149,6 +149,17 @@ export default async function handler(req, res) {
       return value && typeof value === "object" && (typeof value.data === "string" || typeof value === "string");
     });
 
+    // Hypixel can occasionally return the 9,999,999,999 sentinel instead of a real purse value.
+    // Treat that exact value as unavailable; never present it as spendable coins.
+    const rawCoinPurse = Number(member.coin_purse ?? member.currencies?.coin_purse);
+    const coinPurse = Number.isFinite(rawCoinPurse) && rawCoinPurse >= 0 && rawCoinPurse !== 9999999999
+      ? rawCoinPurse
+      : null;
+    const rawBankBalance = Number(selected.profile.banking?.balance ?? selected.profile.bank?.balance);
+    const bankBalance = Number.isFinite(rawBankBalance) && rawBankBalance >= 0 && rawBankBalance !== 9999999999
+      ? rawBankBalance
+      : null;
+
     const result = {
       source: "Hypixel Public API v2",
       player: { username: player.name || username, uuid },
@@ -157,12 +168,12 @@ export default async function handler(req, res) {
         profileName: selected.profile.cute_name || null,
         selected: Boolean(selected.profile.selected),
         lastSave: Number(member.last_save || 0) || null,
-        bankBalance: Number(selected.profile.banking?.balance ?? selected.profile.bank?.balance ?? 0) || 0
+        bankBalance
       },
       availableProfiles: profileOptions,
       otherProfiles: profileOptions.filter((profile) => profile.profileId !== selected.profile.profile_id),
       progression: {
-        coinPurse: Number(member.coin_purse ?? member.currencies?.coin_purse ?? 0) || 0,
+        coinPurse,
         skillExperience,
         leveling: member.leveling || null,
         slayers: member.slayer_bosses || null,
@@ -185,7 +196,8 @@ export default async function handler(req, res) {
       dataNotes: [
         "Only the selected profile's member progression is included. availableProfiles contains profile IDs and display metadata for this account.",
         "Collections are limited to the 50 largest numeric totals.",
-        "Inventory NBT is not decoded, so equipped gear and accessories are unavailable."
+        "Inventory NBT is not decoded, so equipped gear and accessories are unavailable.",
+        "A coin purse or bank value equal to 9,999,999,999 is treated as unavailable because Hypixel may return it as a sentinel, not a real balance."
       ]
     };
 
