@@ -359,7 +359,7 @@ async function askAxon(username, profile, bazaar) {
     "- Do not treat bank capital as income or claim a profit/hour without reliable current evidence. If rates are unavailable, say so and explain how to measure them with a short test.",
     "- Give up to 5 genuinely useful options; fewer is fine. Do not pad with generic ideas.",
     "Use concise headings: Profile facts, Best money-making methods, What to verify, Suggested budget, Confidence."
-  ]
+  ].join("\n");
   let response;
   try {
     response = await fetch("/api/analyze", {
