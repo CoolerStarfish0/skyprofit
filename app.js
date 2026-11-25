@@ -35,7 +35,7 @@ function renderInlineMarkdown(parent, text) {
     const token = match[0];
     const isBold = token.startsWith("**") || token.startsWith("__");
     const element = document.createElement(isBold ? "strong" : "em");
-    element.textContent = token.slice(2, isBold ? -2 : -1);
+    element.textContent = token.slice(isBold ? 2 : 1, isBold ? -2 : -1);
     parent.append(element);
     cursor = match.index + token.length;
   }
@@ -349,7 +349,7 @@ async function askAxon(username, profile, bazaar) {
     "- Minions and passive methods only when there is actual evidence to estimate setup and returns.",
     "EVIDENCE RULES:",
     "- Consider 60M bank capital when judging setup affordability and risk. Do not recommend risking all 60M; give a sensible test budget/reserve when a method needs investment.",
-    "- Treat accurate collections as historical progression signals, not inventory or guaranteed income. Do not recommend grinding Magma Cream or any other collection solely because its total is high.",
+    "- Treat accurate collections as historical progression signals, not inventory or guaranteed income. When mentioning large totals (such as Magma Cream, Netherite or other resources), call them collection totals/milestones; never imply the player currently owns that amount or can earn it again at the same rate. Do not recommend grinding Magma Cream or any other collection solely because its total is high.",
     "- Use skills, slayer levels, mining progression, Garden/Jacob data, pets, Nether/Kuudra data, and dungeon data to identify unlocks and prerequisites. Dungeon class, mob kills, secrets, damage, score, or deaths alone are NOT evidence of money-making ability or expected profit.",
     "- Do not invent unlocks, gear, item drops, skill levels, prices, coins/hour, profit rates, party requirements, or completion tiers. Inventory NBT is not decoded; never guess weapons, armor, tools, equipment, or accessories.",
     "- For Kuudra and other combat methods, distinguish confirmed access/progression from unknown gear and party readiness. If essential requirements are missing from the API, mark the method 'promising but needs verification' rather than pretending it is unlocked or impossible.",
